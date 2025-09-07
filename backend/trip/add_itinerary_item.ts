@@ -10,6 +10,8 @@ interface AddItineraryItemParams {
 export const addItineraryItem = api<AddItineraryItemParams & CreateItineraryItemRequest, ItineraryItem>(
   { expose: true, method: "POST", path: "/trips/:tripId/itinerary" },
   async ({ tripId, ...req }) => {
+    console.log("Adding itinerary item:", { tripId, ...req });
+
     // Verify trip exists
     const trip = await tripDB.queryRow`
       SELECT id FROM trips WHERE id = ${tripId} AND user_id = 'default-user'
@@ -38,6 +40,29 @@ export const addItineraryItem = api<AddItineraryItemParams & CreateItineraryItem
       throw APIError.invalidArgument(`activityType must be one of: ${validActivityTypes.join(", ")}`);
     }
 
+    // Sanitize and prepare data
+    const cleanTitle = req.title.trim();
+    const cleanDescription = req.description?.trim() || null;
+    const cleanLocation = req.location?.trim() || null;
+    const cleanBookingUrl = req.bookingUrl?.trim() || null;
+    const weatherDependent = Boolean(req.weatherDependent);
+    
+    // Validate time format if provided
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (req.startTime && !timeRegex.test(req.startTime)) {
+      throw APIError.invalidArgument("startTime must be in HH:MM format");
+    }
+    if (req.endTime && !timeRegex.test(req.endTime)) {
+      throw APIError.invalidArgument("endTime must be in HH:MM format");
+    }
+
+    // Validate cost if provided
+    if (req.cost !== undefined && req.cost !== null) {
+      if (typeof req.cost !== 'number' || req.cost < 0) {
+        throw APIError.invalidArgument("cost must be a non-negative number");
+      }
+    }
+
     try {
       const item = await tripDB.queryRow<ItineraryItem>`
         INSERT INTO itinerary_items (
@@ -45,33 +70,67 @@ export const addItineraryItem = api<AddItineraryItemParams & CreateItineraryItem
           title, description, location, cost, booking_url, weather_dependent
         )
         VALUES (
-          ${tripId}, ${req.dayNumber}, ${req.startTime || null}, ${req.endTime || null}, 
-          ${req.activityType}, ${req.title.trim()}, ${req.description?.trim() || null}, ${req.location?.trim() || null},
-          ${req.cost || null}, ${req.bookingUrl?.trim() || null}, ${req.weatherDependent || false}
+          ${tripId}, 
+          ${req.dayNumber}, 
+          ${req.startTime || null}, 
+          ${req.endTime || null}, 
+          ${req.activityType}, 
+          ${cleanTitle}, 
+          ${cleanDescription}, 
+          ${cleanLocation},
+          ${req.cost || null}, 
+          ${cleanBookingUrl}, 
+          ${weatherDependent}
         )
-        RETURNING id, trip_id as "tripId", day_number as "dayNumber",
-                  start_time as "startTime", end_time as "endTime",
-                  activity_type as "activityType", title, description, location,
-                  cost, booking_url as "bookingUrl", weather_dependent as "weatherDependent",
-                  created_at as "createdAt"
+        RETURNING 
+          id, 
+          trip_id as "tripId", 
+          day_number as "dayNumber",
+          start_time as "startTime", 
+          end_time as "endTime",
+          activity_type as "activityType", 
+          title, 
+          description, 
+          location,
+          cost, 
+          booking_url as "bookingUrl", 
+          weather_dependent as "weatherDependent",
+          created_at as "createdAt"
       `;
 
       if (!item) {
-        throw APIError.internal("Failed to create itinerary item");
+        throw APIError.internal("Failed to create itinerary item - no result returned");
       }
 
+      console.log("Successfully created itinerary item:", item);
       return item;
-    } catch (error) {
-      console.error("Error inserting itinerary item:", error);
+    } catch (error: any) {
+      console.error("Database error inserting itinerary item:", error);
+      console.error("Error message:", error.message);
+      console.error("Error code:", error.code);
       console.error("Request data:", { tripId, ...req });
       
       if (error instanceof APIError) {
         throw error;
       }
       
-      // Log the specific database error for debugging
-      console.error("Database error details:", (error as any).message, (error as any).code);
-      throw APIError.internal("Database error while creating itinerary item");
+      // Handle specific PostgreSQL errors
+      if (error.code) {
+        switch (error.code) {
+          case '23502': // NOT NULL violation
+            throw APIError.invalidArgument(`Missing required field: ${error.message}`);
+          case '23503': // FOREIGN KEY violation
+            throw APIError.invalidArgument("Invalid trip ID or reference");
+          case '23514': // CHECK constraint violation
+            throw APIError.invalidArgument(`Invalid data: ${error.message}`);
+          case '22007': // Invalid datetime format
+            throw APIError.invalidArgument("Invalid time format - use HH:MM");
+          default:
+            console.error("Unhandled database error code:", error.code);
+        }
+      }
+      
+      throw APIError.internal(`Database error while creating itinerary item: ${error.message}`);
     }
   }
 );

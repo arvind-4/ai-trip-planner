@@ -49,6 +49,8 @@ export function TripDetailPage() {
         let successCount = 0;
         let errorCount = 0;
 
+        console.log("Generated itinerary items:", data.itinerary);
+
         // Add generated items to the trip sequentially to avoid race conditions
         for (const item of data.itinerary) {
           try {
@@ -56,18 +58,18 @@ export function TripDetailPage() {
             const cleanItem = {
               tripId: parseInt(id!),
               dayNumber: item.dayNumber,
-              startTime: item.startTime || undefined,
-              endTime: item.endTime || undefined,
+              startTime: item.startTime?.trim() || undefined,
+              endTime: item.endTime?.trim() || undefined,
               activityType: item.activityType,
-              title: item.title?.trim() || `Activity ${item.dayNumber}`,
+              title: item.title?.trim() || `Activity Day ${item.dayNumber}`,
               description: item.description?.trim() || undefined,
               location: item.location?.trim() || undefined,
-              cost: typeof item.cost === 'number' ? item.cost : undefined,
+              cost: typeof item.cost === 'number' && item.cost >= 0 ? Math.floor(item.cost) : undefined,
               bookingUrl: item.bookingUrl?.trim() || undefined,
               weatherDependent: Boolean(item.weatherDependent),
             };
 
-            // Additional validation
+            // Additional frontend validation
             if (!cleanItem.title || cleanItem.title === '') {
               console.warn("Skipping item with empty title:", item);
               errorCount++;
@@ -86,6 +88,26 @@ export function TripDetailPage() {
               continue;
             }
 
+            // Validate activity type
+            const validTypes = ["flight", "accommodation", "activity", "restaurant", "transport", "attraction"];
+            if (!validTypes.includes(cleanItem.activityType)) {
+              console.warn("Skipping item with invalid activityType:", item);
+              errorCount++;
+              continue;
+            }
+
+            // Validate time format if present
+            const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+            if (cleanItem.startTime && !timeRegex.test(cleanItem.startTime)) {
+              console.warn("Invalid startTime format, removing:", cleanItem.startTime);
+              cleanItem.startTime = undefined;
+            }
+            if (cleanItem.endTime && !timeRegex.test(cleanItem.endTime)) {
+              console.warn("Invalid endTime format, removing:", cleanItem.endTime);
+              cleanItem.endTime = undefined;
+            }
+
+            console.log("Adding clean item:", cleanItem);
             await backend.trip.addItineraryItem(cleanItem);
             successCount++;
           } catch (itemError) {

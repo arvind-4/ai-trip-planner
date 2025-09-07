@@ -16,16 +16,16 @@ CREATE TABLE trips (
 CREATE TABLE itinerary_items (
   id BIGSERIAL PRIMARY KEY,
   trip_id BIGINT NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
-  day_number INTEGER NOT NULL,
+  day_number INTEGER NOT NULL CHECK (day_number > 0),
   start_time TIME,
   end_time TIME,
-  activity_type TEXT NOT NULL,
-  title TEXT NOT NULL,
+  activity_type TEXT NOT NULL CHECK (activity_type IN ('flight', 'accommodation', 'activity', 'restaurant', 'transport', 'attraction')),
+  title TEXT NOT NULL CHECK (LENGTH(TRIM(title)) > 0),
   description TEXT,
   location TEXT,
-  cost INTEGER,
+  cost INTEGER CHECK (cost >= 0),
   booking_url TEXT,
-  weather_dependent BOOLEAN DEFAULT FALSE,
+  weather_dependent BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -44,4 +44,5 @@ CREATE TABLE destinations (
 
 CREATE INDEX idx_trips_user_id ON trips(user_id);
 CREATE INDEX idx_itinerary_items_trip_id ON itinerary_items(trip_id);
+CREATE INDEX idx_itinerary_items_day_number ON itinerary_items(trip_id, day_number);
 CREATE INDEX idx_destinations_name ON destinations(name);
