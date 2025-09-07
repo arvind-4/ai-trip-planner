@@ -205,11 +205,15 @@ export function TripDetailPage() {
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Interests</h4>
             <div className="flex flex-wrap gap-2">
-              {trip.preferences.interests.map((interest) => (
-                <Badge key={interest} variant="secondary">
-                  {interest}
-                </Badge>
-              ))}
+              {trip.preferences.interests && trip.preferences.interests.length > 0 ? (
+                trip.preferences.interests.map((interest) => (
+                  <Badge key={interest} variant="secondary">
+                    {interest}
+                  </Badge>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No interests specified</p>
+              )}
             </div>
           </div>
 
