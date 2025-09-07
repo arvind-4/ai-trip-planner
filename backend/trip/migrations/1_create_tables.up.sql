@@ -1,3 +1,9 @@
+-- Drop tables if they exist to ensure a clean slate.
+-- This is for development; in production, a more careful migration would be needed.
+DROP TABLE IF EXISTS itinerary_items;
+DROP TABLE IF EXISTS destinations;
+DROP TABLE IF EXISTS trips;
+
 CREATE TABLE trips (
   id BIGSERIAL PRIMARY KEY,
   user_id TEXT NOT NULL,

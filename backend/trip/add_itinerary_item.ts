@@ -21,23 +21,23 @@ export const addItineraryItem = api<AddItineraryItemParams & CreateItineraryItem
     // --- Stricter Validation and Sanitization ---
     const dayNumber = req.dayNumber;
     if (typeof dayNumber !== 'number' || !Number.isInteger(dayNumber) || dayNumber < 1) {
-        throw APIError.invalidArgument("dayNumber must be a positive integer");
+        throw APIError.invalidArgument(`dayNumber must be a positive integer, got: ${dayNumber}`);
     }
 
     const activityType = req.activityType;
     const validActivityTypes = ["flight", "accommodation", "activity", "restaurant", "transport", "attraction"];
     if (typeof activityType !== 'string' || !validActivityTypes.includes(activityType.trim())) {
-        throw APIError.invalidArgument(`activityType must be one of: ${validActivityTypes.join(", ")}`);
+        throw APIError.invalidArgument(`activityType must be one of: ${validActivityTypes.join(", ")}, got: ${activityType}`);
     }
 
     const title = req.title;
     if (typeof title !== 'string' || title.trim() === '') {
-        throw APIError.invalidArgument("title is required and cannot be empty");
+        throw APIError.invalidArgument(`title is required and cannot be empty, got: ${title}`);
     }
 
     const cost = req.cost;
     if (cost !== undefined && cost !== null && (typeof cost !== 'number' || cost < 0)) {
-        throw APIError.invalidArgument("cost must be a non-negative number");
+        throw APIError.invalidArgument(`cost must be a non-negative number, got: ${cost}`);
     }
 
     const cleanReq = {
@@ -88,10 +88,10 @@ export const addItineraryItem = api<AddItineraryItemParams & CreateItineraryItem
       return item;
     } catch (error: any) {
         const errorDetails = {
-            message: error.message,
-            code: error.code,
-            detail: error.detail,
-            constraint: error.constraint,
+            message: error.message || "Unknown error",
+            code: error.code || "N/A",
+            detail: error.detail || "N/A",
+            constraint: error.constraint || "N/A",
         };
         console.error("Database error inserting itinerary item:", {
             ...errorDetails,
