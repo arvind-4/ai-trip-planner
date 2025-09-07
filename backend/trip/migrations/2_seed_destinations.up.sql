@@ -1,0 +1,11 @@
+INSERT INTO destinations (name, country, description, average_cost_per_day, best_months, tags, coordinates) VALUES
+('Paris', 'France', 'The City of Light, famous for its art, fashion, gastronomy, and culture', 120, ARRAY['Apr', 'May', 'Sep', 'Oct'], ARRAY['culture', 'art', 'food', 'romance'], '{"lat": 48.8566, "lng": 2.3522}'),
+('Tokyo', 'Japan', 'A bustling metropolis blending traditional and modern culture', 100, ARRAY['Mar', 'Apr', 'Oct', 'Nov'], ARRAY['culture', 'food', 'technology', 'urban'], '{"lat": 35.6762, "lng": 139.6503}'),
+('Rome', 'Italy', 'The Eternal City with ancient history and incredible cuisine', 90, ARRAY['Apr', 'May', 'Sep', 'Oct'], ARRAY['history', 'culture', 'food', 'art'], '{"lat": 41.9028, "lng": 12.4964}'),
+('New York City', 'USA', 'The city that never sleeps, known for its energy and diversity', 150, ARRAY['Apr', 'May', 'Sep', 'Oct'], ARRAY['urban', 'culture', 'food', 'nightlife'], '{"lat": 40.7128, "lng": -74.0060}'),
+('Bali', 'Indonesia', 'Tropical paradise with beautiful beaches and rich culture', 60, ARRAY['May', 'Jun', 'Jul', 'Aug', 'Sep'], ARRAY['beach', 'nature', 'relaxation', 'culture'], '{"lat": -8.3405, "lng": 115.0920}'),
+('Barcelona', 'Spain', 'Vibrant city known for its architecture, art, and Mediterranean lifestyle', 85, ARRAY['May', 'Jun', 'Sep', 'Oct'], ARRAY['architecture', 'culture', 'beach', 'food'], '{"lat": 41.3851, "lng": 2.1734}'),
+('London', 'UK', 'Historic city with world-class museums, theaters, and parks', 130, ARRAY['May', 'Jun', 'Jul', 'Aug', 'Sep'], ARRAY['history', 'culture', 'museums', 'theater'], '{"lat": 51.5074, "lng": -0.1278}'),
+('Bangkok', 'Thailand', 'Bustling capital known for ornate shrines and vibrant street life', 50, ARRAY['Nov', 'Dec', 'Jan', 'Feb'], ARRAY['culture', 'food', 'temples', 'nightlife'], '{"lat": 13.7563, "lng": 100.5018}'),
+('Amsterdam', 'Netherlands', 'Charming city of canals, museums, and cycling culture', 110, ARRAY['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'], ARRAY['culture', 'museums', 'cycling', 'canals'], '{"lat": 52.3676, "lng": 4.9041}'),
+('Sydney', 'Australia', 'Harbor city known for its iconic Opera House and beautiful beaches', 140, ARRAY['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'], ARRAY['beach', 'urban', 'nature', 'culture'], '{"lat": -33.8688, "lng": 151.2093}');
