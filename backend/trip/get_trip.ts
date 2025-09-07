@@ -24,6 +24,22 @@ export const getTrip = api<GetTripParams, TripWithItinerary>(
       throw APIError.notFound("trip not found");
     }
 
+    // Parse preferences if it's a string
+    if (trip.preferences && typeof trip.preferences === 'string') {
+      try {
+        trip.preferences = JSON.parse(trip.preferences);
+      } catch (error) {
+        // If parsing fails, set default preferences
+        trip.preferences = {
+          interests: [],
+          travelStyle: "mid-range",
+          accommodation: "hotel",
+          pace: "moderate",
+          groupSize: 2
+        };
+      }
+    }
+
     const itinerary: ItineraryItem[] = [];
     for await (const item of tripDB.query<ItineraryItem>`
       SELECT id, trip_id as "tripId", day_number as "dayNumber",
