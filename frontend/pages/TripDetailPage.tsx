@@ -45,28 +45,42 @@ export function TripDetailPage() {
   const generateItineraryMutation = useMutation({
     mutationFn: backend.trip.generateItinerary,
     onSuccess: async (data) => {
-      // Add generated items to the trip
-      for (const item of data.itinerary) {
-        await backend.trip.addItineraryItem({
-          tripId: parseInt(id!),
-          dayNumber: item.dayNumber,
-          startTime: item.startTime,
-          endTime: item.endTime,
-          activityType: item.activityType,
-          title: item.title,
-          description: item.description,
-          location: item.location,
-          cost: item.cost,
-          bookingUrl: item.bookingUrl,
-          weatherDependent: item.weatherDependent,
+      try {
+        // Add generated items to the trip sequentially to avoid race conditions
+        for (const item of data.itinerary) {
+          try {
+            await backend.trip.addItineraryItem({
+              tripId: parseInt(id!),
+              dayNumber: item.dayNumber,
+              startTime: item.startTime || undefined,
+              endTime: item.endTime || undefined,
+              activityType: item.activityType,
+              title: item.title,
+              description: item.description || undefined,
+              location: item.location || undefined,
+              cost: item.cost || undefined,
+              bookingUrl: item.bookingUrl || undefined,
+              weatherDependent: item.weatherDependent || false,
+            });
+          } catch (itemError) {
+            console.error("Failed to add itinerary item:", item, itemError);
+            // Continue with the next item even if one fails
+          }
+        }
+        
+        queryClient.invalidateQueries({ queryKey: ["trip", id] });
+        toast({
+          title: "Itinerary Generated!",
+          description: "Your AI-powered itinerary has been created.",
+        });
+      } catch (error) {
+        console.error("Failed to add itinerary items:", error);
+        toast({
+          title: "Partial Success",
+          description: "Some itinerary items were added successfully. Please refresh to see them.",
+          variant: "destructive",
         });
       }
-      
-      queryClient.invalidateQueries({ queryKey: ["trip", id] });
-      toast({
-        title: "Itinerary Generated!",
-        description: "Your AI-powered itinerary has been created.",
-      });
     },
     onError: (error) => {
       console.error("Failed to generate itinerary:", error);
