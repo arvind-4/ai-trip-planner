@@ -46,38 +46,79 @@ export function TripDetailPage() {
     mutationFn: backend.trip.generateItinerary,
     onSuccess: async (data) => {
       try {
+        let successCount = 0;
+        let errorCount = 0;
+
         // Add generated items to the trip sequentially to avoid race conditions
         for (const item of data.itinerary) {
           try {
-            await backend.trip.addItineraryItem({
+            // Validate and clean the data before sending
+            const cleanItem = {
               tripId: parseInt(id!),
               dayNumber: item.dayNumber,
               startTime: item.startTime || undefined,
               endTime: item.endTime || undefined,
               activityType: item.activityType,
-              title: item.title,
-              description: item.description || undefined,
-              location: item.location || undefined,
-              cost: item.cost || undefined,
-              bookingUrl: item.bookingUrl || undefined,
-              weatherDependent: item.weatherDependent || false,
-            });
+              title: item.title?.trim() || `Activity ${item.dayNumber}`,
+              description: item.description?.trim() || undefined,
+              location: item.location?.trim() || undefined,
+              cost: typeof item.cost === 'number' ? item.cost : undefined,
+              bookingUrl: item.bookingUrl?.trim() || undefined,
+              weatherDependent: Boolean(item.weatherDependent),
+            };
+
+            // Additional validation
+            if (!cleanItem.title || cleanItem.title === '') {
+              console.warn("Skipping item with empty title:", item);
+              errorCount++;
+              continue;
+            }
+
+            if (!cleanItem.activityType || cleanItem.activityType === '') {
+              console.warn("Skipping item with empty activityType:", item);
+              errorCount++;
+              continue;
+            }
+
+            if (!cleanItem.dayNumber || cleanItem.dayNumber < 1) {
+              console.warn("Skipping item with invalid dayNumber:", item);
+              errorCount++;
+              continue;
+            }
+
+            await backend.trip.addItineraryItem(cleanItem);
+            successCount++;
           } catch (itemError) {
             console.error("Failed to add itinerary item:", item, itemError);
+            errorCount++;
             // Continue with the next item even if one fails
           }
         }
         
         queryClient.invalidateQueries({ queryKey: ["trip", id] });
-        toast({
-          title: "Itinerary Generated!",
-          description: "Your AI-powered itinerary has been created.",
-        });
+        
+        if (successCount > 0 && errorCount === 0) {
+          toast({
+            title: "Itinerary Generated!",
+            description: "Your AI-powered itinerary has been created.",
+          });
+        } else if (successCount > 0 && errorCount > 0) {
+          toast({
+            title: "Partial Success",
+            description: `${successCount} items added successfully, ${errorCount} failed. Check the results.`,
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to add any itinerary items. Please try again.",
+            variant: "destructive",
+          });
+        }
       } catch (error) {
         console.error("Failed to add itinerary items:", error);
         toast({
-          title: "Partial Success",
-          description: "Some itinerary items were added successfully. Please refresh to see them.",
+          title: "Error",
+          description: "An error occurred while adding itinerary items. Please try again.",
           variant: "destructive",
         });
       }

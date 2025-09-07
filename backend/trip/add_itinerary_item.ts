@@ -20,12 +20,22 @@ export const addItineraryItem = api<AddItineraryItemParams & CreateItineraryItem
     }
 
     // Validate required fields
-    if (!req.title || !req.activityType) {
-      throw APIError.invalidArgument("title and activityType are required");
+    if (!req.title || req.title.trim() === "") {
+      throw APIError.invalidArgument("title is required and cannot be empty");
+    }
+
+    if (!req.activityType || req.activityType.trim() === "") {
+      throw APIError.invalidArgument("activityType is required and cannot be empty");
     }
 
     if (!req.dayNumber || req.dayNumber < 1) {
       throw APIError.invalidArgument("dayNumber must be a positive integer");
+    }
+
+    // Validate activity type is one of the allowed values
+    const validActivityTypes = ["flight", "accommodation", "activity", "restaurant", "transport", "attraction"];
+    if (!validActivityTypes.includes(req.activityType)) {
+      throw APIError.invalidArgument(`activityType must be one of: ${validActivityTypes.join(", ")}`);
     }
 
     try {
@@ -36,8 +46,8 @@ export const addItineraryItem = api<AddItineraryItemParams & CreateItineraryItem
         )
         VALUES (
           ${tripId}, ${req.dayNumber}, ${req.startTime || null}, ${req.endTime || null}, 
-          ${req.activityType}, ${req.title}, ${req.description || null}, ${req.location || null},
-          ${req.cost || null}, ${req.bookingUrl || null}, ${req.weatherDependent || false}
+          ${req.activityType}, ${req.title.trim()}, ${req.description?.trim() || null}, ${req.location?.trim() || null},
+          ${req.cost || null}, ${req.bookingUrl?.trim() || null}, ${req.weatherDependent || false}
         )
         RETURNING id, trip_id as "tripId", day_number as "dayNumber",
                   start_time as "startTime", end_time as "endTime",
@@ -53,9 +63,14 @@ export const addItineraryItem = api<AddItineraryItemParams & CreateItineraryItem
       return item;
     } catch (error) {
       console.error("Error inserting itinerary item:", error);
+      console.error("Request data:", { tripId, ...req });
+      
       if (error instanceof APIError) {
         throw error;
       }
+      
+      // Log the specific database error for debugging
+      console.error("Database error details:", (error as any).message, (error as any).code);
       throw APIError.internal("Database error while creating itinerary item");
     }
   }
