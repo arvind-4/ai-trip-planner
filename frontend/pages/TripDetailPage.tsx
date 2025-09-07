@@ -81,13 +81,19 @@ export function TripDetailPage() {
   const handleGenerateItinerary = () => {
     if (!trip) return;
 
-    generateItineraryMutation.mutate({
+    const requestData: any = {
       destination: trip.destination,
       startDate: trip.startDate,
       endDate: trip.endDate,
-      budget: trip.budgetMax,
       preferences: trip.preferences,
-    });
+    };
+
+    // Only include budget if it exists and is a valid number
+    if (trip.budgetMax && typeof trip.budgetMax === 'number') {
+      requestData.budget = trip.budgetMax;
+    }
+
+    generateItineraryMutation.mutate(requestData);
   };
 
   const formatDate = (dateString: string) => {
