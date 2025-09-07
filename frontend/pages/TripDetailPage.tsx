@@ -54,22 +54,56 @@ export function TripDetailPage() {
         // Add generated items to the trip sequentially to avoid race conditions
         for (const item of data.itinerary) {
           try {
-            // Validate and clean the data before sending
-            const cleanItem = {
+            // Strict validation and cleaning of data before sending
+            const cleanItem: any = {
               tripId: parseInt(id!),
-              dayNumber: item.dayNumber,
-              startTime: item.startTime?.trim() || undefined,
-              endTime: item.endTime?.trim() || undefined,
-              activityType: item.activityType,
-              title: item.title?.trim() || `Activity Day ${item.dayNumber}`,
-              description: item.description?.trim() || undefined,
-              location: item.location?.trim() || undefined,
-              cost: typeof item.cost === 'number' && item.cost >= 0 ? Math.floor(item.cost) : undefined,
-              bookingUrl: item.bookingUrl?.trim() || undefined,
+              dayNumber: typeof item.dayNumber === 'number' ? item.dayNumber : 1,
+              activityType: item.activityType || 'activity',
+              title: typeof item.title === 'string' ? item.title.trim() : `Activity Day ${item.dayNumber || 1}`,
               weatherDependent: Boolean(item.weatherDependent),
             };
 
-            // Additional frontend validation
+            // Only add optional fields if they have valid values
+            if (item.startTime && typeof item.startTime === 'string') {
+              const trimmedStartTime = item.startTime.trim();
+              if (trimmedStartTime && /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(trimmedStartTime)) {
+                cleanItem.startTime = trimmedStartTime;
+              }
+            }
+
+            if (item.endTime && typeof item.endTime === 'string') {
+              const trimmedEndTime = item.endTime.trim();
+              if (trimmedEndTime && /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(trimmedEndTime)) {
+                cleanItem.endTime = trimmedEndTime;
+              }
+            }
+
+            if (item.description && typeof item.description === 'string') {
+              const trimmedDescription = item.description.trim();
+              if (trimmedDescription) {
+                cleanItem.description = trimmedDescription;
+              }
+            }
+
+            if (item.location && typeof item.location === 'string') {
+              const trimmedLocation = item.location.trim();
+              if (trimmedLocation) {
+                cleanItem.location = trimmedLocation;
+              }
+            }
+
+            if (item.cost && typeof item.cost === 'number' && item.cost >= 0) {
+              cleanItem.cost = Math.floor(item.cost);
+            }
+
+            if (item.bookingUrl && typeof item.bookingUrl === 'string') {
+              const trimmedBookingUrl = item.bookingUrl.trim();
+              if (trimmedBookingUrl) {
+                cleanItem.bookingUrl = trimmedBookingUrl;
+              }
+            }
+
+            // Final validation before sending
             if (!cleanItem.title || cleanItem.title === '') {
               console.warn("Skipping item with empty title:", item);
               errorCount++;
@@ -96,21 +130,10 @@ export function TripDetailPage() {
               continue;
             }
 
-            // Validate time format if present
-            const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-            if (cleanItem.startTime && !timeRegex.test(cleanItem.startTime)) {
-              console.warn("Invalid startTime format, removing:", cleanItem.startTime);
-              cleanItem.startTime = undefined;
-            }
-            if (cleanItem.endTime && !timeRegex.test(cleanItem.endTime)) {
-              console.warn("Invalid endTime format, removing:", cleanItem.endTime);
-              cleanItem.endTime = undefined;
-            }
-
-            console.log("Adding clean item:", cleanItem);
+            console.log("Adding validated item:", cleanItem);
             await backend.trip.addItineraryItem(cleanItem);
             successCount++;
-          } catch (itemError) {
+          } catch (itemError: any) {
             console.error("Failed to add itinerary item:", item, itemError);
             errorCount++;
             // Continue with the next item even if one fails
