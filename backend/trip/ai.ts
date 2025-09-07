@@ -8,7 +8,7 @@ const googleGeminiAPIKey = secret("GoogleGeminiAPIKey");
 
 // Initialize the Google Generative AI client
 const genAI = new GoogleGenerativeAI(googleGeminiAPIKey());
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 function buildPrompt(req: GenerateItineraryRequest): string {
     const startDate = new Date(req.startDate);
